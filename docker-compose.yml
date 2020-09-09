@@ -1,0 +1,84 @@
+# Use root/example as user/password credentials
+version: '3.1'
+
+services:
+  db-node-1:
+    image: bitnami/mariadb-galera:10.3.24
+    restart: always
+    environment:
+      - MARIADB_ROOT_PASSWORD=example
+      #- ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_GALERA_CLUSTER_NAME=mycluster
+      # - MARIADB_GALERA_CLUSTER_ADDRESS=gcomm://db-node-1:4567,0.0.0.0:4567,db-node-2:4567,db-node-3:4567 \
+      - MARIADB_GALERA_MARIABACKUP_USER=my_mariabackup_user
+      - MARIADB_GALERA_MARIABACKUP_PASSWORD=my_mariabackup_password
+      - MARIADB_USER=erp_auto
+      - MARIADB_PASSWORD=erp_auto
+      - MARIADB_DATABASE=my_database
+      - MARIADB_GALERA_FORCE_SAFETOBOOTSTRAP=yes
+    volumes: 
+      - db-node-vol-1:/bitnami/mariadb
+      # - ./db-node-1/galera.cnf:/opt/bitnami/mariadb/conf/galera.cnf:ro
+    networks:
+      - app-tier
+  
+  db-node-2:
+    image: bitnami/mariadb-galera:10.3.24
+    restart: always
+    depends_on:
+      - db-node-1
+    environment:
+      - MARIADB_ROOT_PASSWORD=example
+      - MARIADB_GALERA_CLUSTER_NAME=mycluster
+      - MARIADB_GALERA_CLUSTER_ADDRESS=gcomm://db-node-1:4567,0.0.0.0:4567
+      - MARIADB_GALERA_MARIABACKUP_USER=my_mariabackup_user
+      - MARIADB_GALERA_MARIABACKUP_PASSWORD=my_mariabackup_password
+
+    volumes: 
+      - db-node-vol-2:/bitnami/mariadb
+      # - ./db-node-2/galera.cnf:/opt/bitnami/mariadb/conf/galera.cnf:ro
+    networks:
+      - app-tier
+
+    db-node-3:
+      image: bitnami/mariadb-galera:10.3.24
+      restart: always
+      depends_on:
+        - db-node-1
+      environment:
+        - MARIADB_ROOT_PASSWORD=example
+        - MARIADB_GALERA_CLUSTER_NAME=mycluster
+        - MARIADB_GALERA_CLUSTER_ADDRESS=gcomm://db-node-1:4567,0.0.0.0:4567
+        - MARIADB_GALERA_MARIABACKUP_USER=my_mariabackup_user
+        - MARIADB_GALERA_MARIABACKUP_PASSWORD=my_mariabackup_password
+  
+      volumes: 
+        - db-node-vol-3:/bitnami/mariadb
+        # - ./db-node-2/galera.cnf:/opt/bitnami/mariadb/conf/galera.cnf:ro
+      networks:
+        - app-tier
+  
+  # proxysql:
+  #   image: marbaez/proxysql
+  #   build: 
+  #     context: ./proxy-sql
+      # networks:
+      #   - app-tier
+
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - app-tier
+volumes: 
+  db-node-vol-1:
+  db-node-vol-2:
+  db-node-vol-3:
+
+networks:
+  app-tier:
+    driver: bridge
+  

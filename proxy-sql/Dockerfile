@@ -1,0 +1,1 @@
+FROM proxysql/proxysql:2.0.9
